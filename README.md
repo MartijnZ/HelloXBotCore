@@ -1,2 +1,2 @@
-# HelloXBotCore
-Example Plugin for XBotCore
+HelloXBotCore
+===============

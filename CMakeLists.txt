@@ -1,21 +1,29 @@
-cmake_minimum_required(VERSION 2.8.12)
+# 
+#  Copyright (C) 2017 IIT-ADVR
+#  Author: 
+#  email: 
+#
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU Lesser General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+#  GNU Lesser General Public License for more details.
+#
+#  You should have received a copy of the GNU Lesser General Public License
+#  along with this program. If not, see <http://www.gnu.org/licenses/>
+#
 
-# [MZ]: Why do we set these?
-if(COMMAND cmake_policy)
-    cmake_policy(SET CMP0003 OLD)
-    cmake_policy(SET CMP0005 NEW)
-    cmake_policy(SET CMP0017 NEW)
-endif(COMMAND cmake_policy)
+# CMake 3.5.1 required 
+cmake_minimum_required(VERSION 3.5.1)
 
-# Project name:
+# XBot RT Plugin
 project(HelloXBotCore)
 
-# Add cmake dir and include custom macros
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
-include(MacroOptionalBuild)
-include(MacroYCMInstallLibrary)
-
-# Select compiler, C++11
+# C++11
 include(CheckCXXCompilerFlag)
 check_cxx_compiler_flag("-std=c++11" COMPILER_SUPPORTS_CXX11)
 check_cxx_compiler_flag("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
@@ -27,27 +35,36 @@ else()
     message(FATAL_ERROR "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a different C++ compiler.")
 endif()
 
-# find first YCM in order to have ${YCM_MODULE_PATH} defined for 3rd party software like Eigen3
-#find_package(YCM REQUIRED) # [mz] Didn't provide Eigen3, I had to include manually!
-#find_package(XBotCore REQUIRED)
-find_package(Eigen3 REQUIRED)
+# Add cmake dir and include custom macros
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
+include(MacroYCMInstallLibrary)
+
+# find required packages
 find_package(XCM REQUIRED)
-#find_package(ADVR_ROS QUIET)
-#find_package(catkin QUIET COMPONENTS roscpp geometry_msgs)
 
-include_directories(include
-           ${EIGEN3_INCLUDE_DIRS}
-           ${XCM_INCLUDE_DIRS}
-           #           ${XBotCoreThread_INCLUDE_DIRS}
-           )
+# XENOMAI
+set(ENABLE_XENO CACHE BOOL "ON")
+if ( ${ENABLE_XENO} )
+   find_package(Xenomai)
+endif()
 
-# For library:
-add_library(${PROJECT_NAME} SHARED src/HelloXBotCore.cpp)
+# include
+include_directories(include/${PROJECT_NAME}
+                    ${XCM_INCLUDE_DIRS}
+                    )
 
-target_link_libraries(${PROJECT_NAME}
-                    ${XCM_LIBRARIES})
+# lib
+add_library(${PROJECT_NAME} SHARED
+    src/HelloXBotCore_plugin.cpp
+)
 
-# For installation
+# set Xenomain flags if Xenomai is found
+if ( Xenomai_FOUND )
+    set_xeno_flags(${PROJECT_NAME})
+endif()
+
+# linking
+target_link_libraries(${PROJECT_NAME} ${XCM_LIBRARIES})
+
+#install
 ycm_library_install(${PROJECT_NAME} 1 0 0)
-
-
